@@ -25,7 +25,11 @@ function mountFS {
 	sudo mount /dev/nvme0n1p1 /mnt/boot/efi &
 	sleep "$delay"
 }
-function chrootExe {
+function manualRescue {
+	echo "Entering fake root env..."
+	sudo chroot /mnt
+}
+function autoRescue {
 	echo "Entering fake root env..."
 	#"set -e" enables exit on error
 	sudo chroot /mnt /bin/bash -c "set -e && grub-install $bootPart && update-grub && exit"
@@ -50,13 +54,26 @@ function unmountFS {
 	sleep "$delay"
 }
 
-function run {
+function autorun {
 	echo "Ensuring symlink fs is not mounted..."
 	unmountFS
 	mountFS
-	chrootExe
+	autoRescue
 	unmountFS
 }
-run
+function manualrun {
+	echo "Ensuring symlink fs is not mounted..."
+	unmountFS
+	mountFS
+	manualRescue
+	unmountFS
+}
+
+if [ "$1" == "-m" ]; then
+	manualrun
+else
+	autorun
+fi
+
 echo "Done."
 
